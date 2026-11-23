@@ -1,0 +1,84 @@
+### Try the API right inside VS Code with the "REST Client" extension (humao.rest-client):
+### click "Send Request" above any block.
+
+@base = http://localhost:4000/api
+@token = paste-token-from-login-here
+
+### Health check
+GET http://localhost:4000/health
+
+### Log in as the seeded admin (copy the "token" into @token above)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@example.com", "password": "admin12345" }
+
+### Log in as the seeded customer
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "customer@example.com", "password": "customer123" }
+
+### Register a new customer
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{ "name": "New Person", "email": "new@example.com", "password": "password123" }
+
+### Who am I?
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
+
+### List products (filters: search, category, minPrice, maxPrice, inStock, sort, page, limit)
+GET {{base}}/products?category=electronics&sort=price_asc
+
+### Get one product
+GET {{base}}/products/1
+
+### List categories
+GET {{base}}/categories
+
+### [Admin] Create a product (prices are in cents: 2599 = $25.99)
+POST {{base}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Desk Lamp", "description": "LED lamp", "priceCents": 2599, "stock": 12, "categoryId": 3 }
+
+### Add to cart
+POST {{base}}/cart/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "productId": 1, "quantity": 2 }
+
+### View cart
+GET {{base}}/cart
+Authorization: Bearer {{token}}
+
+### Checkout (creates an order from the cart)
+POST {{base}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "shippingAddress": {
+    "fullName": "Demo Customer",
+    "line1": "123 Market St",
+    "city": "San Francisco",
+    "state": "CA",
+    "postalCode": "94103",
+    "country": "US"
+  }
+}
+
+### My orders (admins see all orders)
+GET {{base}}/orders
+Authorization: Bearer {{token}}
+
+### [Admin] Mark order 1 as paid
+PATCH {{base}}/orders/1/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "paid" }
