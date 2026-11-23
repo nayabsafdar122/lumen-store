@@ -1,0 +1,51 @@
+name: Record demo video
+
+# Push to the `record-demo` branch to record a fresh tour of the live site.
+on:
+  push:
+    branches: [record-demo]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null
+          npm install --no-save playwright@1
+          npx playwright install --with-deps chromium
+      - name: Record tour of the live site
+        env:
+          SITE_URL: https://lumen-store-wheat.vercel.app
+        run: node scripts/record-demo.js
+      - name: Convert to MP4 (LinkedIn-friendly H.264)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          RAW=$(ls media/raw/*.webm | head -1)
+          mkdir -p media
+          # Trim the first second (page warm-up) and encode for social media.
+          ffmpeg -y -ss 1 -i "$RAW" -vf "fps=30,scale=1440:900:flags=lanczos,format=yuv420p" \
+            -c:v libx264 -preset veryfast -crf 22 -movflags +faststart -an media/lumen-demo.mp4
+          ffmpeg -y -ss 6 -i media/lumen-demo.mp4 -frames:v 1 -q:v 2 media/lumen-poster.jpg
+          rm -rf media/raw
+          ls -la media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lumen-demo
+          path: media/
+      - name: Commit the video to this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add media/lumen-demo.mp4 media/lumen-poster.jpg
+          git commit -m "Demo video recorded by GitHub Actions [skip ci]"
+          git push
