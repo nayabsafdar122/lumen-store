@@ -4,7 +4,7 @@
 const router = require('express').Router();
 
 const SOURCE = 'https://cdn.dummyjson.com/product-images/';
-const SAFE_PATH = /^[\w\-'.%()]+(\/[\w\-'.%()]+)*\.(webp|png|jpe?g)$/i;
+const SAFE_PATH = /^[\w\-'.%()&]+(\/[\w\-'.%()&]+)*\.(webp|png|jpe?g)$/i;
 const memory = new Map(); // small in-process cache
 const MAX_ITEMS = 300;
 

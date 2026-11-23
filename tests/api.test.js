@@ -271,3 +271,24 @@ describe('reviews, wishlist, coupons, feedback, admin', () => {
     expect((await request(app).post('/api/auth/login').send({ email: 'cust@test.com', password: 'newpassword1' })).status).toBe(200);
   });
 });
+
+describe('image proxy', () => {
+  const realFetch = global.fetch;
+  afterAll(() => { global.fetch = realFetch; });
+
+  test('serves allowed product photos (including names with &) and blocks anything else', async () => {
+    const seen = [];
+    global.fetch = async (url) => {
+      seen.push(String(url));
+      return new Response(Buffer.from([1, 2, 3]), { status: 200, headers: { 'content-type': 'image/webp' } });
+    };
+    const ok = await request(app).get("/api/img/mens-shirts/blue-&-black-check-shirt/1.webp");
+    expect(ok.status).toBe(200);
+    expect(ok.headers['content-type']).toBe('image/webp');
+    expect(ok.headers['cache-control']).toMatch(/max-age=31536000/);
+    expect(seen[0]).toBe('https://cdn.dummyjson.com/product-images/mens-shirts/blue-%26-black-check-shirt/1.webp');
+    expect((await request(app).get("/api/img/fragrances/dior-j'adore/1.webp")).status).toBe(200);
+    expect((await request(app).get('/api/img/notes/readme.txt')).status).toBe(400);
+    expect((await request(app).get('/api/img/..%2F..%2Fetc%2Fpasswd.png')).status).toBe(400);
+  });
+});
